@@ -2,190 +2,266 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { apiFetch } from "@/lib/api";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-
   const router = useRouter();
 
-  async function handleSubmit(
-    e: React.FormEvent
-  ) {
+  const [isRegister, setIsRegister] = useState(false);
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     setError("");
+    setSuccess("");
+    setLoading(true);
 
     try {
-      const data = await apiFetch(
-        "/login",
-        {
+      if (isRegister) {
+        // REGISTER
+        const data = await apiFetch("/register", {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username,
+            email,
+            password,
+          }),
+        });
+
+        setSuccess(
+          `Account created successfully for ${data.username}. Please login.`
+        );
+
+        // Clear form
+        setUsername("");
+        setEmail("");
+        setPassword("");
+
+        // Switch to Login
+        setIsRegister(false);
+      } else {
+        // LOGIN
+        const data = await apiFetch("/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
             email,
             password,
           }),
+        });
+
+        if (data.access_token) {
+          localStorage.setItem("token", data.access_token);
+          localStorage.setItem("username", data.username);
+          localStorage.setItem("email", email);
+
+          router.push("/dashboard");
+        } else {
+          setError(data.message || "Login failed");
         }
-      );
-
-      if (data.success) {
-        localStorage.setItem(
-          "token",
-          data.access_token
-        );
-
-        localStorage.setItem(
-          "username",
-          data.username
-        );
-        localStorage.setItem(
-        "email",
-         email
-        );
-
-        router.push("/dashboard");
-      } else {
-        setError(
-          data.message ||
-            "Login failed"
-        );
       }
-    } catch {
-      setError(
-        "Invalid email or password"
-      );
-    }
+    } catch (err: unknown) {
+  console.error(err);
+
+  if (err instanceof Error) {
+    setError(err.message);
+  } else {
+    setError(
+      isRegister
+        ? "Registration failed. Please try again."
+        : "Login failed. Please check your email and password."
+    );
   }
+} finally {
+      setLoading(false);
+    }
+  };
+
+  const switchMode = () => {
+    setIsRegister(!isRegister);
+    setError("");
+    setSuccess("");
+    setUsername("");
+    setEmail("");
+    setPassword("");
+  };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background">
+    <main className="min-h-screen bg-black text-white flex items-center justify-center px-6 py-12">
+      <div className="w-full max-w-md">
+        {/* Logo / Brand */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-linear-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/20 mb-5">
+            <span className="text-2xl font-bold">AI</span>
+          </div>
 
-      {/* Background Glow */}
-      <div className="absolute top-10 left-10 h-72 w-72 rounded-full bg-blue-500/20 blur-3xl" />
-      <div className="absolute bottom-10 left-32 h-72 w-72 rounded-full bg-purple-500/20 blur-3xl" />
-      <div className="absolute top-40 right-10 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl" />
-
-      <div className="relative z-10 grid w-full max-w-7xl grid-cols-1 gap-10 px-8 lg:grid-cols-2">
-
-        {/* Left Side */}
-        <div className="hidden lg:flex flex-col justify-center">
-          <h1 className="text-6xl font-bold leading-tight">
-            <span className="bg-linear-to-r from-blue-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">
-              AI Fraud
-            </span>
-            <br />
-            Detection System
+          <h1 className="text-3xl font-bold tracking-tight">
+            AI Fraud Detection System
           </h1>
 
-          <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-            Enterprise-grade AI platform for detecting
-            fraudulent credit card transactions using
-            Machine Learning and real-time risk analysis.
+          <p className="text-gray-400 mt-2">
+            {isRegister
+              ? "Create your account to access fraud analytics."
+              : "Login to access your fraud analytics dashboard."}
           </p>
+        </div>
 
-          <div className="mt-10 grid grid-cols-3 gap-4">
-            <div className="glass-card rounded-2xl p-4">
-              <h3 className="text-3xl font-bold">
-                99.2%
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Accuracy
-              </p>
+        {/* Card */}
+        <div className="rounded-3xl border border-white/10 bg-white/0.05] backdrop-blur-xl p-8 shadow-2xl">
+          {/* Heading */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold">
+              {isRegister ? "Create Account" : "Welcome Back"}
+            </h2>
+
+            <p className="text-sm text-gray-400 mt-1">
+              {isRegister
+                ? "Register a new account to get started."
+                : "Enter your credentials to continue."}
+            </p>
+          </div>
+
+          {/* Success */}
+          {success && (
+            <div className="mb-5 rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-400">
+              {success}
+            </div>
+          )}
+
+          {/* Error */}
+          {error && (
+            <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              {error}
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Username - Register only */}
+            {isRegister && (
+              <div>
+                <label
+                  htmlFor="username"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
+                  Username
+                </label>
+
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter your username"
+                  required
+                  className="w-full rounded-xl border border-white/10 bg-white/0.05] px-4 py-3 text-white placeholder-gray-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+            )}
+
+            {/* Email */}
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-300 mb-2"
+              >
+                Email
+              </label>
+
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+                className="w-full rounded-xl border border-white/10 bg-white/0.05] px-4 py-3 text-white placeholder-gray-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              />
             </div>
 
-            <div className="glass-card rounded-2xl p-4">
-              <h3 className="text-3xl font-bold">
-                284K+
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Transactions
-              </p>
+            {/* Password */}
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-300 mb-2"
+              >
+                Password
+              </label>
+
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+                minLength={6}
+                className="w-full rounded-xl border border-white/10 bg-white/0.05] px-4 py-3 text-white placeholder-gray-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              />
             </div>
 
-            <div className="glass-card rounded-2xl p-4">
-              <h3 className="text-3xl font-bold">
-                24/7
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Monitoring
-              </p>
-            </div>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-xl bg-linear-to-r from-blue-600 to-purple-600 px-4 py-3 font-semibold text-white shadow-lg shadow-blue-500/20 transition hover:scale-[1.01] hover:from-blue-500 hover:to-purple-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading
+                ? isRegister
+                  ? "Creating Account..."
+                  : "Logging in..."
+                : isRegister
+                  ? "Create Account"
+                  : "Login"}
+            </button>
+          </form>
+
+          {/* Toggle */}
+          <div className="mt-6 text-center text-sm text-gray-400">
+            {isRegister ? (
+              <>
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={switchMode}
+                  className="font-semibold text-blue-400 hover:text-blue-300"
+                >
+                  Login
+                </button>
+              </>
+            ) : (
+              <>
+                Don&apos;t have an account?
+                <button
+                  type="button"
+                  onClick={switchMode}
+                  className="font-semibold text-blue-400 hover:text-blue-300"
+                >
+                  Sign Up
+                </button>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Login Card */}
-        <div className="flex items-center justify-center">
-          <form
-            onSubmit={handleSubmit}
-            className="glass-card w-full max-w-md rounded-3xl border border-white/10 p-8 backdrop-blur-xl"
-          >
-            <h1 className="mb-2 text-3xl font-bold">
-              Welcome Back
-            </h1>
-
-            <p className="mb-6 text-muted-foreground">
-              Login to access your fraud analytics dashboard.
-            </p>
-
-            <div className="space-y-5">
-
-              <div>
-                <Label htmlFor="email">
-                  Email
-                </Label>
-
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) =>
-                    setEmail(e.target.value)
-                  }
-                  className="mt-2 h-12 px-4 text-base"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="password">
-                  Password
-                </Label>
-
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) =>
-                    setPassword(e.target.value)
-                  }
-                  className="mt-2 h-12 px-4 text-base"
-                />
-              </div>
-
-              {error && (
-                <p className="text-sm text-red-500">
-                  {error}
-                </p>
-              )}
-
-              <Button
-                type="submit"
-                className="h-12 w-full rounded-xl"
-              >
-                Login
-              </Button>
-
-            </div>
-          </form>
-        </div>
-
+        {/* Footer */}
+        <p className="text-center text-xs text-gray-500 mt-6">
+          Secure AI-powered transaction monitoring
+        </p>
       </div>
-    </div>
+    </main>
   );
 }
