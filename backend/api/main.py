@@ -73,7 +73,7 @@ try:
     amount_scaler = joblib.load("models/amount_scaler.pkl")
     time_scaler = joblib.load("models/time_scaler.pkl")
 
-    dataset = pd.read_csv("data/transactions.csv")
+    dataset = pd.read_csv("data/prediction_samples.csv")
     print("Dataset loaded:", dataset.shape)
     MODEL_LOADED = True
 
