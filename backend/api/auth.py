@@ -73,11 +73,12 @@ def register(
         }
 
     except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=400,
-            detail=str(e)
-        )
+      db.rollback()
+      print("REGISTER DATABASE ERROR:", repr(e))
+      raise HTTPException(
+        status_code=500,
+        detail="Registration failed. Check backend logs."
+    )
 
 
 @router.post("/login")
