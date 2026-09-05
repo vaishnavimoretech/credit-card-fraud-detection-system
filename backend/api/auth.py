@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from passlib.context import CryptContext
+import bcrypt
 from jose import jwt
 from datetime import datetime, timedelta
 from pydantic import BaseModel
@@ -9,11 +9,6 @@ from pydantic import BaseModel
 from .database import get_db
 
 router = APIRouter()
-
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto"
-)
 
 SECRET_KEY = "change-this-to-a-random-secret-key-later"
 ALGORITHM = "HS256"
@@ -36,9 +31,19 @@ def register(
     user: UserCreate,
     db: Session = Depends(get_db)
 ):
-    hashed_pw = pwd_context.hash(
-        user.password
-    )
+    # bcrypt supports passwords up to 72 bytes
+    password_bytes = user.password.encode("utf-8")
+
+    if len(password_bytes) > 72:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be 72 bytes or less"
+        )
+
+    hashed_pw = bcrypt.hashpw(
+        password_bytes,
+        bcrypt.gensalt()
+    ).decode("utf-8")
 
     query = text("""
         INSERT INTO users
@@ -48,23 +53,31 @@ def register(
         RETURNING id
     """)
 
-    result = db.execute(
-        query,
-        {
-            "username": user.username,
-            "email": user.email,
-            "hashed_password": hashed_pw
+    try:
+        result = db.execute(
+            query,
+            {
+                "username": user.username,
+                "email": user.email,
+                "hashed_password": hashed_pw
+            }
+        )
+
+        db.commit()
+
+        new_id = result.fetchone()[0]
+
+        return {
+            "id": new_id,
+            "username": user.username
         }
-    )
 
-    db.commit()
-
-    new_id = result.fetchone()[0]
-
-    return {
-        "id": new_id,
-        "username": user.username
-    }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
 
 
 @router.post("/login")
@@ -95,10 +108,23 @@ def login(
             detail="User not found"
         )
 
-    if not pwd_context.verify(
-        user.password,
-        result[3]
-    ):
+    password_bytes = user.password.encode("utf-8")
+
+    if len(password_bytes) > 72:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be 72 bytes or less"
+        )
+
+    try:
+        valid_password = bcrypt.checkpw(
+            password_bytes,
+            result[3].encode("utf-8")
+        )
+    except Exception:
+        valid_password = False
+
+    if not valid_password:
         raise HTTPException(
             status_code=401,
             detail="Invalid password"
