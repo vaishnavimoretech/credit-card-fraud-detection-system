@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 import ThemeToggle from "./theme-toggle";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
@@ -10,8 +10,11 @@ interface Notification {
   message: string;
   time: string;
 }
+interface HeaderProps {
+  onMenuClick: () => void;
+}
 
-export default function Header() {
+export default function Header({ onMenuClick }: HeaderProps) {
   const [showNotifications, setShowNotifications] =
     useState(false);
 
@@ -39,11 +42,12 @@ export default function Header() {
       <div className="flex items-center justify-between px-8 py-4">
 
         {/* Search */}
-        <div className="relative w-100">
-        
-          
-        </div>
-
+        <button
+  onClick={onMenuClick}
+  className="rounded-xl border border-white/10 p-3 hover:bg-white/5 lg:hidden"
+>
+  <Menu size={18} />
+</button>
         <div className="flex items-center gap-4">
 
           {/* Notifications */}
