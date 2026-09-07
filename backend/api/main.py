@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from .auth import router as auth_router
-from api.database import SessionLocal
+from api.database import SessionLocal, engine, Base
 from models.prediction import Prediction
 from fastapi import UploadFile, File,  HTTPException
 from fastapi.responses import FileResponse
@@ -17,12 +17,13 @@ import numpy as np
 
 
 app = FastAPI()
+Base.metadata.create_all(bind=engine)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://credit-card-fraud-detection-system-livid.vercel.app"
-        "http://localhost:3000",
+        "https://credit-card-fraud-detection-system-livid.vercel.app",
+        "http://localhost:3000",  # local testing साठी (optional)
     ],
     allow_credentials=True,
     allow_methods=["*"],
