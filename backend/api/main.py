@@ -22,7 +22,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://credit-card-fraud-detection-system-livid.vercel.app"
-        
+        "http://localhost:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
