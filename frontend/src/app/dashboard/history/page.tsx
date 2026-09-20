@@ -61,11 +61,11 @@ export default function HistoryPage() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/history/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
+     `${process.env.NEXT_PUBLIC_API_URL}/history/${id}`,
+    {
+       method: "DELETE",
+    }
+    );
 
       if (!response.ok) {
         throw new Error("Delete failed");
@@ -91,11 +91,11 @@ export default function HistoryPage() {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/history",
-        {
-          method: "DELETE",
-        }
-      );
+       `${process.env.NEXT_PUBLIC_API_URL}/history`,
+       {
+        method: "DELETE",
+       }
+     );
 
       if (!response.ok) {
         throw new Error("Failed");
@@ -193,7 +193,6 @@ export default function HistoryPage() {
         </div>
 
       </div>
-
       {/* Search */}
 
       <div className="glass-card rounded-2xl p-4">
