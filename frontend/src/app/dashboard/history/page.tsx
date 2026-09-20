@@ -47,7 +47,7 @@ export default function HistoryPage() {
 
   function exportHistory() {
     window.open(
-      "http://127.0.0.1:8000/export-history",
+      `${process.env.NEXT_PUBLIC_API_URL}/export-history`,
       "_blank"
     );
   }
